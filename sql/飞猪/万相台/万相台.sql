@@ -2,7 +2,7 @@
 -- 万相台
 -- 文件: 万相台.xlsx
 -- =========================================
-USE xiangwang_fliggy_system;
+USE feizhu;
 
 CREATE TABLE IF NOT EXISTS fliggy_wanxiangtai (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',

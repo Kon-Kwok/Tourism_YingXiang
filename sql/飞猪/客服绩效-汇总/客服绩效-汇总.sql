@@ -2,7 +2,7 @@
 -- 客服绩效-汇总
 -- 文件: 客服绩效-汇总.xlsx
 -- =========================================
-USE xiangwang_fliggy_system;
+USE feizhu;
 
 CREATE TABLE IF NOT EXISTS fliggy_customer_service_performance_summary (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',

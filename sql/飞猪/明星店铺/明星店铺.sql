@@ -2,7 +2,7 @@
 -- 明星店铺
 -- 文件: 明星店铺.xlsx
 -- =========================================
-USE xiangwang_fliggy_system;
+USE feizhu;
 
 CREATE TABLE IF NOT EXISTS fliggy_star_store (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',

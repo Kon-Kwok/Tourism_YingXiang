@@ -2,7 +2,7 @@
 -- 客服绩效-工作量分析
 -- 文件: 客服绩效-工作量分析.xlsx
 -- =========================================
-USE xiangwang_fliggy_system;
+USE feizhu;
 
 CREATE TABLE IF NOT EXISTS fliggy_customer_service_performance_workload_analysis (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',

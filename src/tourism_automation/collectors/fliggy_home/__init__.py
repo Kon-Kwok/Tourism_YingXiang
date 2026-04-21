@@ -1,0 +1,1 @@
+"""Fliggy home collector package."""

@@ -1,0 +1,1 @@
+"""SYCM collector package."""

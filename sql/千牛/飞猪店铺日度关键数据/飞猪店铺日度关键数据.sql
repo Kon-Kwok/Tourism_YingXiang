@@ -2,7 +2,7 @@
 -- 飞猪店铺日度关键数据
 -- 文件: 飞猪店铺日度关键数据.xlsx
 -- =========================================
-USE xiangwang_fliggy_system;
+USE qianniu;
 
 CREATE TABLE IF NOT EXISTS qianniu_fliggy_shop_daily_key_data (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',

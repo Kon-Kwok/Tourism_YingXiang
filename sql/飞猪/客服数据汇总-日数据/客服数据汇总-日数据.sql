@@ -2,7 +2,7 @@
 -- 客服数据汇总-日数据
 -- 文件: 客服数据汇总-日数据.xlsx
 -- =========================================
-USE xiangwang_fliggy_system;
+USE feizhu;
 
 CREATE TABLE IF NOT EXISTS fliggy_customer_service_data_daily (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',

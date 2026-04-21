@@ -2,7 +2,7 @@
 -- 直通车
 -- 文件: 直通车.xlsx
 -- =========================================
-USE xiangwang_fliggy_system;
+USE feizhu;
 
 CREATE TABLE IF NOT EXISTS fliggy_tmall_express (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',

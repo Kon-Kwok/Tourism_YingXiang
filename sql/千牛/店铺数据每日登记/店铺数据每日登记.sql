@@ -2,7 +2,7 @@
 -- 店铺数据每日登记
 -- 文件: 店铺数据每日登记.xlsx
 -- =========================================
-USE xiangwang_fliggy_system;
+USE qianniu;
 
 CREATE TABLE IF NOT EXISTS qianniu_shop_data_daily_registration (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
