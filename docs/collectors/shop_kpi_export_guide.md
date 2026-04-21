@@ -8,7 +8,7 @@
 2. 在统一 Chrome 中打开：
 
 ```text
-https://kf.topchitu.com/web/custom-kpi/shop-kpi?id=941
+https://kf.topchitu.com/web/custom-kpi/employee-kpi?id=1721&wwt=ALL
 ```
 
 ## 使用命令
@@ -20,16 +20,48 @@ python3 -m tourism_automation.cli.main shop-kpi-export \
   --output /tmp/shop-kpi.xlsx
 
 python3 -m tourism_automation.cli.main shop-kpi-export \
-  --password 5678
+  --report-name 人均日接入 \
+  --date-mode day \
+  --date 2026-04-20
+
+python3 -m tourism_automation.cli.main shop-kpi-export \
+  --report-name 人均日接入 \
+  --date-mode day \
+  --date 2026-04-20 \
+  --json
+
+python3 -m tourism_automation.cli.main shop-kpi-export-batch \
+  --date-mode day \
+  --date 2026-04-20
 ```
+
+支持的报表：
+- `人均日接入`
+- `每周店铺个人数据`
+- `客服数据23年新`
+
+批量命令 `shop-kpi-export-batch` 会按以上顺序依次导出这 3 张表。
+
+输出说明：
+- 普通模式返回的 `output_file` 是真实下载文件路径，例如 `/home/kk/下载/...xlsx`
+- 加 `--json` 后，命令会等待 Excel 下载完成，再直接输出统一的 `summary + rows` JSON
+
+日期参数说明：
+- `--date-mode day` 时可传 `--date YYYY-MM-DD`
+- `--date-mode day` 不传 `--date` 时默认前一天
+- `week` / `month` 仍按页面当前逻辑执行
 
 ## 自动化流程
 
 1. 查找店铺 KPI 页面。
-2. 点击导出按钮。
-3. 等待密码弹窗出现。
-4. 输入密码并确认。
-5. 等待浏览器开始下载。
+2. 按报表名称切换目标报表。
+3. 按参数切换日/周/月模式；`day` 时可设置日期。
+4. 点击查询按钮。
+5. 点击导出按钮。
+6. 等待密码弹窗出现。
+7. 输入密码并确认。
+8. 等待真实下载文件落地。
+9. `--json` 时把 Excel 转成统一 JSON 并输出到 stdout。
 
 ## 常见问题
 

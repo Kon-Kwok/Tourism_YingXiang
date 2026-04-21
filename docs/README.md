@@ -12,11 +12,14 @@
    - [collectors/fliggy-home.md](collectors/fliggy-home.md)
    - [collectors/fliggy_kpi_usage.md](collectors/fliggy_kpi_usage.md)
    - [collectors/shop_kpi_export_guide.md](collectors/shop_kpi_export_guide.md)
+   - `python3 -m tourism_automation.cli.main fliggy-order-list list --page-num 1 --page-size 10`：飞猪订单列表纯 HTTP 采集
+   - `python3 -m tourism_automation.cli.main fliggy-order-list list --page-num 1 --page-size 20 --deal-start "2026-04-20 00:00:00" --deal-end "2026-04-20 23:59:39" | python3 bin/prepare_fliggy_order_list_for_storage.py`：飞猪订单列表采集后做入库前汇总处理
 
 ## 保留的参考文档
 
 - [sycm_shop_source_api.md](sycm_shop_source_api.md)：SYCM 店铺来源接口参数和响应格式。
 - [implementation/fliggy_kpi_implementation.md](implementation/fliggy_kpi_implementation.md)：飞猪 KPI 采集实现背景和代码路径。
+- 飞猪订单列表采集当前为纯 `HTTP + Cookie` 实现，CDP 仅用于前期定位接口与参数。
 
 ## 维护原则
 

@@ -17,6 +17,14 @@ from tourism_automation.shared.http.json_client import JsonHttpClient
 
 CHROME_COOKIE_DB = Path.home() / ".config/google-chrome-debug/Default/Cookies"
 CHROME_SAFE_STORAGE_LABEL = "Chrome Safe Storage"
+CHROME_COOKIE_HOST_KEYS = (
+    "sycm.taobao.com",
+    ".taobao.com",
+    ".fliggy.com",
+    "fsc.fliggy.com",
+    "sell.fliggy.com",
+    "seller.fliggy.com",
+)
 
 
 @dataclass
@@ -45,11 +53,12 @@ def build_chrome_session() -> requests.Session:
     conn = sqlite3.connect(f"file:{CHROME_COOKIE_DB}?mode=ro", uri=True)
     try:
         cursor = conn.cursor()
+        host_keys_sql = ", ".join(f"'{host_key}'" for host_key in CHROME_COOKIE_HOST_KEYS)
         cursor.execute(
-            """
+            f"""
             SELECT host_key, name, value, encrypted_value, path
             FROM cookies
-            WHERE host_key IN ('sycm.taobao.com', '.taobao.com')
+            WHERE host_key IN ({host_keys_sql})
             """
         )
         for host_key, name, value, encrypted_value, path in cursor.fetchall():

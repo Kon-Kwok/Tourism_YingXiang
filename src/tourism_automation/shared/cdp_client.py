@@ -103,7 +103,8 @@ class CdpClient:
         ws_url: str,
         js_code: str,
         timeout: Optional[int] = None,
-        await_promise: bool = True
+        await_promise: bool = True,
+        user_gesture: bool = False,
     ) -> Dict:
         """通过WebSocket执行JavaScript
 
@@ -129,7 +130,8 @@ class CdpClient:
                     "params": {
                         "expression": js_code,
                         "returnByValue": True,
-                        "awaitPromise": await_promise
+                        "awaitPromise": await_promise,
+                        "userGesture": user_gesture,
                     }
                 }
 

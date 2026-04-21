@@ -1,0 +1,1 @@
+"""Fliggy order list collector."""

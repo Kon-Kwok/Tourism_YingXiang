@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta
+from urllib.parse import urlencode
 
 from tourism_automation.collectors.sycm.collector import HomePageCollector
 from tourism_automation.collectors.sycm.universal_client import UniversalSycmClient
@@ -147,45 +149,47 @@ def run(args) -> int:
 
     # 流量监控数据采集
     if args.collector_command == "flow-monitor":
-        from datetime import datetime, timedelta
-
         try:
-            # 解析日期
-            biz_date = datetime.strptime(args.date, "%Y-%m-%d")
-            # 计算对比日期（前一天）
-            compare_date = biz_date - timedelta(days=1)
+            http = ChromeHttpClient.from_local_chrome()
+            api_url, referer = _build_flow_monitor_request(args.date)
+            payload = http.fetch_json(api_url, referer=referer)
 
-            # 构建对比日期范围格式
-            date_range = f"{compare_date.strftime('%Y-%m-%d')}|{biz_date.strftime('%Y-%m-%d')},{biz_date.strftime('%Y-%m-%d')}|{biz_date.strftime('%Y-%m-%d')}"
-
-            client = UniversalSycmClient()
-            page_result = client.fetch_page_endpoint(
-                page_id="flow_monitor",
-                endpoint_name="overview",
-                date_range=date_range,
-                device=args.device
-            )
-
-            if page_result.status == "success" and page_result.data.get("code") == 0:
-                # 格式化输出
+            if payload.get("code") == 0:
+                metrics = payload.get("data", {})
+                if isinstance(metrics, dict) and "data" in metrics and isinstance(metrics["data"], dict):
+                    metrics = metrics["data"]
+                shop_source_payload = ShopSourceCollector(http=http).collect(
+                    biz_date=args.date,
+                    shop_name=args.shop_name,
+                )
+                shop_source_metrics = {
+                    item.get("source_name"): item.get("uv")
+                    for item in shop_source_payload.get("metrics", [])
+                }
                 result = {
                     "summary": {
-                        "metric_source": "chrome_cookie_http",
+                        "source": "chrome_cookie_http",
                         "shop_name": args.shop_name,
                         "page_code": "flow_monitor",
                         "page_name": "流量监控概览",
-                        "collection_date": args.date,
-                        "compare_date": compare_date.strftime('%Y-%m-%d'),
+                        "biz_date": args.date,
                         "device": args.device,
-                        "metric_count": len(page_result.data.get("data", {}))
+                        "row_count": 1,
                     },
-                    "metrics": page_result.data.get("data", {}),
-                    "raw_payload": page_result.data
+                    "rows": [
+                        {
+                            "访客数": _metric_value(metrics, "uv"),
+                            "浏览量": _metric_value(metrics, "pv"),
+                            "关注店铺人数": _metric_value(metrics, "shopCltByrCnt"),
+                            "广告流量": shop_source_metrics.get("广告流量"),
+                            "平台流量": shop_source_metrics.get("平台流量"),
+                        }
+                    ],
                 }
                 print(json.dumps(result, ensure_ascii=False, indent=2))
                 return 0
             else:
-                error_msg = page_result.error if page_result.status == "error" else page_result.data.get("message", "Unknown error")
+                error_msg = payload.get("message", "Unknown error")
                 print(json.dumps({"status": "error", "error": error_msg}, ensure_ascii=False, indent=2))
                 return 1
 
@@ -215,3 +219,61 @@ def run(args) -> int:
             return 1
 
     return 1
+
+
+def _metric_value(metrics, key):
+    metric = metrics.get(key, {})
+    if isinstance(metric, dict):
+        return metric.get("value")
+    return None
+
+
+def _build_flow_monitor_request(biz_date: str) -> tuple[str, str]:
+    if biz_date == _today_local_str():
+        query = urlencode(
+            {
+                "dateRange": f"{biz_date}|{biz_date}",
+                "dateType": "today",
+            }
+        )
+        api_url = (
+            "https://sycm.taobao.com/flow/new/live/guide/trend/overview.json?"
+            + urlencode(
+                {
+                    "dateType": "today",
+                    "dateRange": f"{biz_date}|{biz_date}",
+                    "device": "0",
+                }
+            )
+        )
+        referer = f"https://sycm.taobao.com/flow/monitor/overview?{query}"
+        return api_url, referer
+
+    current_date = datetime.strptime(biz_date, "%Y-%m-%d").date()
+    previous_date = (current_date - timedelta(days=1)).isoformat()
+    date_range = f"{biz_date}|{biz_date},{previous_date}|{previous_date}"
+    api_url = (
+        "https://sycm.taobao.com/flow/long/period/nodistinct/new/guide/trend/overview.json?"
+        + urlencode(
+            {
+                "dateType": "compareRange",
+                "dateRange": date_range,
+                "indexCode": "uv,itmUv,payByrCnt",
+                "device": "2",
+            }
+        )
+    )
+    referer = (
+        "https://sycm.taobao.com/flow/monitor/overview?"
+        + urlencode(
+            {
+                "dateRange": date_range,
+                "dateType": "compareRange",
+            }
+        )
+    )
+    return api_url, referer
+
+
+def _today_local_str() -> str:
+    return datetime.now().strftime("%Y-%m-%d")

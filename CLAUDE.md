@@ -28,6 +28,10 @@ sudo mysql qianniu    # 千牛数据库
 sudo mysql feizhu     # 飞猪数据库
 ```
 
+### 数据库口径补充
+- 当前这套业务里，用户口径的 `SYCM` 日度店铺数据对应的是 `qianniu` 库，不是单独的 `sycm` 库。
+- `qianniu.qianniu_fliggy_shop_daily_key_data` 这种按日期汇总多来源数据的表，若要依赖 `ON DUPLICATE KEY UPDATE` 合并，`日期` 必须具备唯一键，而不只是普通索引。
+
 ## 核心架构
 
 ### 代码组织

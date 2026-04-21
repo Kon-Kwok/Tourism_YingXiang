@@ -26,3 +26,6 @@ Use concise, task-focused commit subjects that describe the current change, not 
 
 ## Security & Operations Notes
 Do not commit cookies, local Chrome profiles, database dumps, or secrets. Browser automation depends on the long-lived debug Chrome session on port `9222`; reuse it instead of creating ad hoc profiles or closing the shared session during development. Prefer the shared `start-chrome-unified.sh` flow over task-specific browser profiles unless the repository is explicitly updated to support a new mode.
+
+## Project-Specific Data Notes
+For this user environment, SYCM-related daily shop data is stored in the `qianniu` schema rather than a separate `sycm` schema. When working with `qianniu.qianniu_fliggy_shop_daily_key_data`, date-based merge pipelines rely on a unique key on `日期`; verify that constraint exists before assuming `ON DUPLICATE KEY UPDATE` will merge multiple sources into one daily row.
