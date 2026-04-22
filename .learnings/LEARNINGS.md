@@ -116,3 +116,67 @@ Keep transient-failure retry logic in the order-list client and treat `success=f
 - **Notes**: Added up to 5 attempts with a short delay for the known transient order-search failure and covered it with a unit test.
 
 ---
+
+## [LRN-20260422-001] best_practice
+
+**Logged**: 2026-04-22T00:00:00+08:00
+**Priority**: high
+**Status**: resolved
+**Area**: backend
+
+### Summary
+When `sycm flow-monitor` returns `关注店铺人数 = null`, the daily-registration ingestion should coerce it to `0` instead of failing integer conversion.
+
+### Details
+During the 2026-04-21 daily run, the flow-monitor payload for `SYCM` returned a single row with every metric set to `null`. The key-data pipeline already normalized that shape to `0` for numeric fields, but `prepare_qianniu_shop_data_daily_registration_sql.py` still treated `None` as an invalid integer and aborted the run. Aligning the registration path with the existing flow-monitor SQL behavior fixed the inconsistency.
+
+### Suggested Action
+Treat `None` follow counts as `0` in `prepare_qianniu_shop_data_daily_registration_sql.py` and keep a regression test for the null-input case.
+
+### Metadata
+- Source: simplify-and-harden
+- Related Files: bin/prepare_qianniu_shop_data_daily_registration_sql.py, tests/test_prepare_qianniu_shop_data_daily_registration_sql.py
+- Tags: sycm, qianniu, null-handling, ingestion
+- Pattern-Key: harden.null_numeric_source_value
+- Recurrence-Count: 1
+- First-Seen: 2026-04-22
+- Last-Seen: 2026-04-22
+
+### Resolution
+- **Resolved**: 2026-04-22T00:00:00+08:00
+- **Commit/PR**: local workspace
+- **Notes**: Null `关注店铺人数` now produces `0` and the top-level yesterday-report skill can finish the daily-registration pipeline.
+
+---
+
+## [LRN-20260422-002] best_practice
+
+**Logged**: 2026-04-22T00:05:00+08:00
+**Priority**: high
+**Status**: resolved
+**Area**: backend
+
+### Summary
+Empty customer-service KPI exports are a valid zero-row business result and should delete that day’s existing rows instead of failing SQL generation.
+
+### Details
+During the 2026-04-21 daily run, the `人均日接入` export completed successfully but returned `row_count = 0` and `rows = []`. The SQL generators for `人均日接入`, `客服数据23年新`, and `每周店铺个人数据` previously raised `no customer rows found for insertion`, which treated a valid empty report as an error and blocked the entire yesterday-report workflow. The correct behavior is to consider an empty export authoritative for that date and remove any stale rows for the day.
+
+### Suggested Action
+For the three customer-service SQL builders, emit `DELETE ... WHERE date = <biz_date>` when the exported payload has no customer rows, and let the orchestrator treat `COUNT(*) = 0` as a successful validation outcome.
+
+### Metadata
+- Source: simplify-and-harden
+- Related Files: bin/prepare_fliggy_customer_service_data_daily_sql.py, bin/prepare_fliggy_customer_service_workload_sql.py, bin/prepare_fliggy_customer_service_summary_sql.py, /home/kk/.codex/skills/yesterday-report-ingestion/scripts/run_yesterday_report.py
+- Tags: topchitu, empty-report, sql, ingestion
+- Pattern-Key: harden.empty_export_zero_row_day
+- Recurrence-Count: 1
+- First-Seen: 2026-04-22
+- Last-Seen: 2026-04-22
+
+### Resolution
+- **Resolved**: 2026-04-22T00:05:00+08:00
+- **Commit/PR**: local workspace
+- **Notes**: Empty KPI exports now generate day-scoped deletes and the yesterday-report orchestrator accepts zero-row validation for those three tables.
+
+---

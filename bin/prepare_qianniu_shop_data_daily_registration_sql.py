@@ -7,6 +7,8 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 
 def _to_int(value) -> int:
+    if value is None:
+        return 0
     try:
         decimal_value = Decimal(str(value))
     except (InvalidOperation, ValueError):

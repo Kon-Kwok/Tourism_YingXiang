@@ -101,7 +101,10 @@ def build_upsert_sql(payload: dict) -> str:
         )
 
     if not values:
-        raise ValueError("no customer rows found for insertion")
+        return (
+            "DELETE FROM feizhu.fliggy_customer_service_performance_workload_analysis\n"
+            f"WHERE date_time = '{biz_date}';"
+        )
 
     return (
         "INSERT INTO feizhu.fliggy_customer_service_performance_workload_analysis\n"

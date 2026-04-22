@@ -89,6 +89,23 @@ class PrepareFliggyCustomerServiceDataDailySqlTests(unittest.TestCase):
         self.assertIn("'james'", stdout.getvalue())
         self.assertIn("ON DUPLICATE KEY UPDATE", stdout.getvalue())
 
+    def test_build_upsert_sql_deletes_day_when_report_is_empty(self):
+        payload = {
+            "summary": {
+                "report_name": "人均日接入",
+                "file_path": "/home/kk/下载/自定义报表_人均日接入_下单优先判定_2026-04-21至2026-04-21.xlsx",
+            },
+            "rows": [],
+        }
+
+        sql = MODULE.build_upsert_sql(payload)
+
+        self.assertEqual(
+            sql,
+            "DELETE FROM feizhu.fliggy_customer_service_data_daily\n"
+            "WHERE `日期` = '2026-04-21';",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

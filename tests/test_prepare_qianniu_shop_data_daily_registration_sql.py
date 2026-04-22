@@ -36,6 +36,16 @@ class PrepareQianniuShopDataDailyRegistrationSqlTests(unittest.TestCase):
 
         self.assertIn("VALUES ('2026-04-10', 31)", sql)
 
+    def test_build_upsert_sql_treats_null_follow_count_as_zero(self):
+        payload = {
+            "summary": {"biz_date": "2026-04-21"},
+            "rows": [{"关注店铺人数": None}],
+        }
+
+        sql = MODULE.build_upsert_sql(payload)
+
+        self.assertIn("VALUES ('2026-04-21', 0)", sql)
+
     def test_main_reads_stdin_and_writes_sql(self):
         payload = {
             "summary": {"biz_date": "2026-04-10"},
