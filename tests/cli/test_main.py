@@ -180,6 +180,7 @@ class UnifiedCliTests(unittest.TestCase):
         args = parser.parse_args(["shop-kpi-export"])
 
         self.assertEqual(args.report_name, "人均日接入")
+        self.assertEqual(args.date_mode, "day")
         self.assertFalse(args.json)
         self.assertEqual(
             parser.parse_args(["shop-kpi-export", "--report-name", "人均日接入"]).report_name,

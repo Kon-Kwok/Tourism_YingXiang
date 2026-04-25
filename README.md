@@ -1,141 +1,126 @@
-# 飞猪/千牛电商数据自动化采集系统
+# 旅游自动化采集系统
 
-基于本机 Chrome 登录态的电商数据采集仓库，统一通过 CLI 运行，覆盖 SYCM、飞猪商家工作台和 Topchitu KPI 场景。
+> 基于Chrome登录态的电商数据自动化采集系统，支持飞猪、千牛、赤兔KPI等多数据源采集。
 
-## 快速开始
+## 🎯 核心功能
 
-### 1. 启动统一 Chrome 调试会话
+### 1. 赤兔KPI客服数据（3个报表）
+
+通过CDP自动化导出Excel报表，转换为JSON并入库。
+
+- **人均日接入**（id=1721）→ `fliggy_customer_service_data_daily`
+- **每周店铺个人数据**（id=1996）→ `fliggy_customer_service_performance_summary`
+- **客服数据23年新**（id=2496）→ `fliggy_customer_service_performance_workload_analysis`
+
+### 2. 飞猪订单列表
+
+HTTP + Cookie采集订单数据，支持时间范围筛选和GMV计算。
+
+→ `fliggy_order_list`
+
+### 3. SYCM流量看板
+
+采集生意参谋流量监控数据（访客数、浏览量、广告/平台流量）。
+
+→ `qianniu.qianniu_fliggy_shop_daily_key_data`
+
+## 🚀 快速开始
+
+### 前置条件
 
 ```bash
+# 1. 启动Chrome调试窗口
 ./bin/start-chrome-unified.sh
+
+# 2. 登录相关网站
+# 在Chrome中登录：sycm.taobao.com, fsc.fliggy.com, kf.topchitu.com
 ```
 
-首次使用时，在该 Chrome 窗口中登录：
-
-- `https://sycm.taobao.com`
-- `https://fsc.fliggy.com`
-- `https://kf.topchitu.com`
-
-### 2. 运行采集命令
+### 一键采集（推荐）
 
 ```bash
-# SYCM 健康检查
-python3 -m tourism_automation.cli.main sycm healthcheck
+# 设置数据库连接
+export HOST="your_mysql_host"
+export PORT="your_mysql_port"
+export USER="your_mysql_user"
+export PASS="your_mysql_password"
 
-# SYCM 首页采集
-python3 -m tourism_automation.cli.main sycm collect-home --date 2026-04-21
-
-# SYCM 流量看板采集
-python3 -m tourism_automation.cli.main sycm flow-monitor --date 2026-04-20 --shop-name "SYCM"
-
-# 飞猪首页采集
-python3 -m tourism_automation.cli.main fliggy-home collect-home --date 2026-04-21
-
-# 员工 KPI 采集
-python3 -m tourism_automation.cli.main fliggy-kpi employee --date 2026-04-21 --method api
-
-# 店铺 KPI 导出
-python3 -m tourism_automation.cli.main shop-kpi-export
-
-# 店铺 KPI 导出后直接转统一 JSON
-python3 -m tourism_automation.cli.main shop-kpi-export --json
-
-# 飞猪订单列表采集
-python3 -m tourism_automation.cli.main fliggy-order-list list --page-num 1 --page-size 10
-
-# 飞猪订单列表最常用命令：采集后直接做入库前汇总处理
-python3 -m tourism_automation.cli.main fliggy-order-list list --page-num 1 --page-size 20 --deal-start "2026-04-20 00:00:00" --deal-end "2026-04-20 23:59:39" | python3 bin/prepare_fliggy_order_list_for_storage.py
+# 一键采集所有业务
+./skills/all.sh $(date -d "yesterday" +%Y-%m-%d)
 ```
 
-## 核心能力
+详细操作步骤请查看 **[skills/README.md](./skills/README.md)** 或 **[AI业务操作指南.md](./AI业务操作指南.md)**
 
-- `SYCM`：首页指标和多页面数据采集，主要使用 HTTP + Cookie。
-- `fliggy-home`：飞猪商家工作台首页核心模块采集。
-- `fliggy-kpi employee`：员工 KPI 采集，使用 CDP + fetch。
-- `shop-kpi-export`：店铺 KPI 页面导出自动化，支持直接输出统一 `summary + rows` JSON。
-- `fliggy-order-list list`：飞猪订单列表采集，使用纯 HTTP + Cookie。
+## 📁 项目结构
 
-## SYCM 流量看板说明
-
-`python3 -m tourism_automation.cli.main sycm flow-monitor --date YYYY-MM-DD --shop-name "SYCM"` 当前输出统一 JSON 结构：
-
-- `summary`
-- `rows`
-
-日期口径：
-
-- 当 `--date` 是当天时，`访客数`、`浏览量`、`关注店铺人数` 走 SYCM 页面实时 `today` 接口。
-- 当 `--date` 不是当天时，这 3 个字段走 SYCM 历史 `compareRange` 接口，返回指定日期的日数据。
-- `广告流量`、`平台流量` 走店铺来源汇总接口；如果源接口当天未返回数据，这两个字段会是 `null`。
-
-示例输出：
-
-```json
-{
-  "summary": {
-    "source": "chrome_cookie_http",
-    "shop_name": "SYCM",
-    "page_code": "flow_monitor",
-    "page_name": "流量监控概览",
-    "biz_date": "2026-04-20",
-    "device": "2",
-    "row_count": 1
-  },
-  "rows": [
-    {
-      "访客数": 13653,
-      "浏览量": 31835,
-      "关注店铺人数": 26,
-      "广告流量": 10510,de 
-      "平台流量": 4030
-    }
-  ]
-}
+```
+src/tourism_automation/
+├── cli/                    # CLI命令入口
+├── collectors/             # 数据采集器
+│   ├── sycm/              # 生意参谋
+│   ├── fliggy_home/       # 飞猪商家工作台
+│   └── fliggy_kpi/        # 飞猪KPI（员工、店铺）
+└── shared/                # 共享组件
+bin/                       # 操作脚本
+skills/                    # 一键执行脚本
+result/                    # 结果和数据指南
+docs/                      # 详细文档
 ```
 
-## 项目结构
+## 📚 关键文档
 
-```text
-Tourism_YingXiang/
-├── src/tourism_automation/
-│   ├── cli/              # CLI 入口
-│   ├── collectors/       # 采集器实现
-│   └── shared/           # Chrome / HTTP / CDP / 结果封装
-├── tests/                # unittest 测试
-├── docs/                 # 使用与实现文档
-├── sql/                  # SQL 资产
-└── bin/                  # 启动与辅助脚本
-```
+- **[skills/README.md](./skills/README.md)** - 一键执行脚本使用指南
+- **[skills/OPTIMIZATION.md](./skills/OPTIMIZATION.md)** - 性能优化迭代计划
+- **[AI业务操作指南.md](./AI业务操作指南.md)** - 三个核心业务的完整操作流程
+- **[result/README.md](./result/README.md)** - 业务操作快速指南
+- **[CLAUDE.md](./CLAUDE.md)** - 项目开发指引
 
-## 测试
-
-```bash
-python3 -m unittest discover tests
-python3 -m unittest tests.cli.test_main
-python3 -m unittest tests.collectors.test_sycm
-python3 -m unittest tests.collectors.test_fliggy_home
-python3 -m unittest tests.test_refactored_clients
-```
-
-## 文档入口
-
-- `docs/README.md`：文档总入口与阅读顺序
-- `docs/collectors/unified_chrome_guide.md`：统一 Chrome 使用规范
-- `docs/architecture/project-structure.md`：项目结构说明
-- `CLAUDE.md`：仓库开发指引
-- `AGENTS.md`：贡献者约定
-
-## 运维注意事项
-
-- 所有浏览器相关采集都依赖 `9222` 端口的统一 Chrome 会话。
-- 不要关闭该 Chrome 窗口，也不要删除 `~/.config/google-chrome-debug`。
-- 登录失效时，只在统一 Chrome 中重新登录，不要新建独立浏览器配置。
-- 采集失败时，先检查 `curl -s http://localhost:9222/json/version` 是否可访问。
-- `fliggy-order-list` 运行时不依赖 CDP，只依赖共享 Chrome cookie 登录态。
-
-## 系统要求
+## 🔧 环境要求
 
 - Python 3.10+
 - MySQL 8.0+
-- Chrome/Chromium
-- 常用依赖：`requests`、`pymysql`、`websockets`、`secretstorage`、`cryptography`
+- Chrome/Chromium（调试端口：9222）
+
+## ⚠️ 重要提示
+
+### Chrome会话管理
+- 调试窗口必须一直运行，不要关闭
+- 配置目录：`~/.config/google-chrome-debug`
+- 启动脚本：`bin/start-chrome-unified.sh`
+
+### 日期模式
+- 赤兔KPI报表：**必须**使用 `--date-mode day`
+- 使用 `--date-mode week` 会导出周报，导致SQL脚本报错
+
+## 📊 数据库表结构
+
+- **feizhu数据库**：客服KPI、订单数据
+- **qianniu数据库**：店铺数据、流量数据、SYCM数据
+
+详见 `sql/` 目录中的建表SQL。
+
+## 🛠️ 三个核心业务命令
+
+```bash
+# 业务1：赤兔KPI报表导出（必须用--date-mode day）
+python3 -m tourism_automation.cli.main shop-kpi-export --report-name "人均日接入" --date-mode day --date YYYY-MM-DD
+
+# 业务2：飞猪订单列表采集
+python3 -m tourism_automation.cli.main fliggy-order-list list --page-num 1 --page-size 100 --deal-start "YYYY-MM-DD 00:00:00" --deal-end "YYYY-MM-DD 23:59:59"
+
+# 业务3：SYCM流量看板采集
+python3 -m tourism_automation.cli.main sycm flow-monitor --date YYYY-MM-DD --shop-name "皇家加勒比国际游轮旗舰店"
+```
+
+完整的数据转换和入库流程请查看 **[AI业务操作指南.md](./AI业务操作指南.md)**
+
+## 📖 开发文档
+
+- `CLAUDE.md` - 项目开发指引
+- `docs/README.md` - 文档总入口
+- `docs/architecture/` - 架构文档
+- `docs/collectors/` - 采集器文档
+
+---
+
+**最后更新**: 2026-04-25

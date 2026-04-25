@@ -470,7 +470,7 @@ class ShopKpiExporter:
         password: str = "1234",
         output_file: Optional[str] = None,
         report_name: str = DEFAULT_REPORT_NAME,
-        date_mode: str = "week",
+        date_mode: str = "day",
         date: Optional[str] = None,
     ) -> str:
         """导出店铺KPI数据
@@ -616,7 +616,7 @@ def export_shop_kpi(
     password: str = "1234",
     output_file: Optional[str] = None,
     report_name: str = ShopKpiExporter.DEFAULT_REPORT_NAME,
-    date_mode: str = "week",
+    date_mode: str = "day",
     date: Optional[str] = None,
 ) -> str:
     """便捷函数：导出店铺KPI数据

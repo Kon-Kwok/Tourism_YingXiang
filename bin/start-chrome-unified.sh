@@ -34,6 +34,9 @@ nohup google-chrome \
   --user-data-dir="$CONFIG_DIR" \
   --no-first-run \
   --no-default-browser-check \
+  --enable-features=UseOzonePlatform \
+  --ozone-platform=wayland \
+  --force-device-scale-factor=1.0 \
   > /tmp/chrome_debug.log 2>&1 &
 
 CHROME_PID=$!

@@ -50,9 +50,9 @@ def register_subparser(subparsers):
 
     parser.add_argument(
         '--date-mode',
-        default='week',
+        default='day',
         choices=ShopKpiExporter.SUPPORTED_DATE_MODES,
-        help='日期模式：day/week/month，默认 week'
+        help='日期模式：day/week/month，默认 day'
     )
 
     parser.add_argument(
@@ -82,9 +82,9 @@ def register_subparser(subparsers):
 
     batch_parser.add_argument(
         '--date-mode',
-        default='week',
+        default='day',
         choices=ShopKpiExporter.SUPPORTED_DATE_MODES,
-        help='日期模式：day/week/month，默认 week'
+        help='日期模式：day/week/month，默认 day'
     )
 
     batch_parser.add_argument(

@@ -10,6 +10,7 @@ venv/
 env/
 ENV/
 .venv
+.claude 
 
 # 测试和覆盖率
 .pytest_cache/

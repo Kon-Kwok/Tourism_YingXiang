@@ -132,6 +132,18 @@ class ShopKpiExporterTests(unittest.TestCase):
             return_value={"title": "shop-kpi", "ws_url": "ws://example"},
         ), mock.patch.object(
             exporter,
+            "select_report",
+            return_value=True,
+        ), mock.patch.object(
+            exporter,
+            "select_date_mode",
+            return_value=True,
+        ), mock.patch.object(
+            exporter,
+            "select_date_range",
+            return_value=True,
+        ), mock.patch.object(
+            exporter,
             "_wait_for_downloaded_file",
             return_value="/home/kk/下载/人均日接入.xlsx",
         ), mock.patch.object(
@@ -184,6 +196,18 @@ class ShopKpiExporterTests(unittest.TestCase):
             return_value={"title": "shop-kpi", "ws_url": "ws://example"},
         ), mock.patch.object(
             exporter,
+            "select_report",
+            return_value=True,
+        ), mock.patch.object(
+            exporter,
+            "select_date_mode",
+            return_value=True,
+        ), mock.patch.object(
+            exporter,
+            "select_date_range",
+            return_value=True,
+        ), mock.patch.object(
+            exporter,
             "_wait_for_downloaded_file",
             return_value="/home/kk/下载/人均日接入.xlsx",
         ), mock.patch.object(
@@ -226,6 +250,18 @@ class ShopKpiExporterTests(unittest.TestCase):
             exporter,
             "_get_shop_kpi_tab",
             return_value={"title": "shop-kpi", "ws_url": "ws://example"},
+        ), mock.patch.object(
+            exporter,
+            "select_report",
+            return_value=True,
+        ), mock.patch.object(
+            exporter,
+            "select_date_mode",
+            return_value=True,
+        ), mock.patch.object(
+            exporter,
+            "select_date_range",
+            return_value=True,
         ), mock.patch.object(
             exporter,
             "_wait_for_downloaded_file",

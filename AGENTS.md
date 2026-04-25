@@ -29,3 +29,13 @@ Do not commit cookies, local Chrome profiles, database dumps, or secrets. Browse
 
 ## Project-Specific Data Notes
 For this user environment, SYCM-related daily shop data is stored in the `qianniu` schema rather than a separate `sycm` schema. When working with `qianniu.qianniu_fliggy_shop_daily_key_data`, date-based merge pipelines rely on a unique key on `日期`; verify that constraint exists before assuming `ON DUPLICATE KEY UPDATE` will merge multiple sources into one daily row.
+
+
+### 密码信息
+- **sudo密码**: `1`
+- **MySQL连接方式**: 
+
+主机地址: 172.28.190.60  (WSL当前IP)
+端口: 3306
+用户名: remote_user
+密码: Tourism2024

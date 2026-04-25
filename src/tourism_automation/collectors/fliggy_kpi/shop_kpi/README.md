@@ -127,7 +127,7 @@ class ShopKpiExporter:
         self,
         output_file: Optional[str] = None,
         report_name: str = "人均日接入",
-        date_mode: str = "week",
+        date_mode: str = "day",
         date: Optional[str] = None,
     ) -> str:
         """导出店铺KPI数据
@@ -135,7 +135,7 @@ class ShopKpiExporter:
         Args:
             output_file: 输出文件路径（可选）
             report_name: 报表名称
-            date_mode: 日期模式，支持 day/week/month
+            date_mode: 日期模式，支持 day/week/month；日报采集必须使用 day
             date: day 模式的日期，格式 YYYY-MM-DD，不传默认前一天
 
         Returns:
