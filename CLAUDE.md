@@ -35,7 +35,7 @@ sudo mysql feizhu     # 飞猪数据库
 
 ### 数据库口径补充
 - 当前这套业务里，用户口径的 `SYCM` 日度店铺数据对应的是 `qianniu` 库，不是单独的 `sycm` 库。
-- `qianniu.qianniu_fliggy_shop_daily_key_data` 这种按日期汇总多来源数据的表，若要依赖 `ON DUPLICATE KEY UPDATE` 合并，`日期` 必须具备唯一键，而不只是普通索引。
+- `qianniu.qianniu_fliggy_shop_daily_key_data` 这种按日期汇总多来源数据的表，当前脚本使用 `UPDATE` 后接 `INSERT ... WHERE NOT EXISTS` 合并同日数据，因为线上 `日期` 可能只是普通索引。只有确认 `日期` 已有唯一键时，才能改回 `ON DUPLICATE KEY UPDATE`。
 
 ## 核心架构
 
@@ -239,21 +239,28 @@ cat result/kpi3_客服数据23年新.json | \
 
 ### 飞猪订单列表数据入库
 
-飞猪订单列表采集后需要经过预处理才能入库：
+飞猪订单列表采集后需要经过预处理才能入库。日报链路必须使用 `--all-pages`，否则 `total_bookings`、`total_pax`、`gmv` 只会按第一页订单计算。
 
 ```bash
 # 步骤1: 采集订单列表
 python3 -m tourism_automation.cli.main fliggy-order-list list \
-  --page-num 1 --page-size 100 \
+  --page-num 1 --page-size 100 --all-pages \
   --deal-start "2026-04-24 00:00:00" \
   --deal-end "2026-04-24 23:59:59" > result/orders_raw.json
 
-# 步骤2: 数据预处理（计算总人数、GMV等）
+# 步骤2: 数据预处理（计算 total_bookings、total_pax、gmv）
 cat result/orders_raw.json | \
   python3 bin/prepare_fliggy_order_list_for_storage.py > result/orders_prepared.json
 
-# 步骤3: 入库（需要编写对应的SQL脚本）
-# 注意：目前订单列表表结构可能需要创建
+# 步骤3: 订单明细入库
+cat result/orders_prepared.json | \
+  python3 bin/prepare_fliggy_order_list_sql.py | \
+  mysql feizhu
+
+# 步骤4: 订单汇总入库千牛日度关键表
+cat result/orders_prepared.json | \
+  python3 bin/prepare_qianniu_shop_daily_key_sql.py | \
+  mysql qianniu
 ```
 
 ### 生意参谋数据入库
@@ -271,9 +278,9 @@ python3 -m tourism_automation.cli.main sycm collect-home \
 
 **对应表**: `qianniu.sycm_homepage_metrics`, `qianniu.sycm_homepage_trends` 等
 
-### 千牛手动数据导入
+### 千牛日度数据入库
 
-千牛数据库包含两张需要手动导入的表：
+千牛数据库包含手动登记数据，也包含日报自动采集写入的日度关键数据：
 
 #### 1. 店铺数据每日登记
 
@@ -291,10 +298,10 @@ cat shop_data_daily.json | \
 #### 2. 飞猪店铺日度关键数据
 
 ```bash
-# 包含流量监控等多来源数据汇总
+# 包含订单汇总等多来源数据汇总
 # 对应脚本: bin/prepare_qianniu_shop_daily_key_sql.py
 
-cat shop_daily_key.json | \
+cat orders_prepared.json | \
   python3 bin/prepare_qianniu_shop_daily_key_sql.py | \
   sudo mysql qianniu
 ```
@@ -303,8 +310,8 @@ cat shop_daily_key.json | \
 
 **重要说明**：
 - 该表按日期汇总多来源数据
-- 使用 `ON DUPLICATE KEY UPDATE` 合并数据
-- `日期` 字段必须具备唯一键（不只是普通索引）
+- 当前脚本使用 `UPDATE` 后接 `INSERT ... WHERE NOT EXISTS`，兼容 `日期` 不是唯一键的线上表
+- 如果后续改成 `ON DUPLICATE KEY UPDATE`，必须先确认 `日期` 字段具备唯一键（不只是普通索引）
 
 ## 数据库结构
 
@@ -548,13 +555,13 @@ sudo mysql feizhu -e "
 | **赤兔KPI - 人均日接入** | CDP自动导出 | `prepare_shop_kpi_excel_to_json.py` | `prepare_fliggy_customer_service_data_daily_sql.py` | feizhu | fliggy_customer_service_data_daily |
 | **赤兔KPI - 每周店铺个人数据** | CDP自动导出 | `prepare_shop_kpi_excel_to_json.py` | `prepare_fliggy_customer_service_summary_sql.py` | feizhu | fliggy_customer_service_performance_summary |
 | **赤兔KPI - 客服数据23年新** | CDP自动导出 | `prepare_shop_kpi_excel_to_json.py` | `prepare_fliggy_customer_service_workload_sql.py` | feizhu | fliggy_customer_service_performance_workload_analysis |
-| **飞猪订单列表** | HTTP自动采集 | N/A | `prepare_fliggy_order_list_for_storage.py` | feizhu | fliggy_order_list |
+| **飞猪订单列表** | HTTP自动采集 | N/A | `prepare_fliggy_order_list_for_storage.py` + `prepare_fliggy_order_list_sql.py` | feizhu | fliggy_order_list |
+| **飞猪订单汇总** | HTTP自动采集 | N/A | `prepare_fliggy_order_list_for_storage.py` + `prepare_qianniu_shop_daily_key_sql.py` | qianniu | qianniu_fliggy_shop_daily_key_data |
 | **生意参谋首页** | HTTP自动采集 | N/A | 自动入库 | qianniu | sycm_homepage_metrics |
-| **生意参谋流量** | HTTP自动采集 | N/A | 自动入库 | qianniu | sycm_flow_monitor_data |
+| **生意参谋流量** | HTTP自动采集 | N/A | `prepare_sycm_flow_sql.py` | qianniu | qianniu_fliggy_shop_daily_key_data |
 | **飞猪商家工作台** | HTTP自动采集 | N/A | 自动入库 | feizhu | 多个业务模块表 |
 | **飞猪客服KPI** | API自动采集 | N/A | 自动入库 | feizhu | fliggy_employee_kpi |
-| **千牛店铺每日登记** | 手动导入 | 自定义 | `prepare_qianniu_shop_data_daily_registration_sql.py` | qianniu | qianniu_shop_data_daily_registration |
-| **飞猪店铺日度关键数据** | 手动导入 | 自定义 | `prepare_qianniu_shop_daily_key_sql.py` | qianniu | qianniu_fliggy_shop_daily_key_data |
+| **千牛店铺每日登记** | 手动导入/流量链路更新关注人数 | 自定义 | `prepare_qianniu_shop_data_daily_registration_sql.py` / `prepare_sycm_flow_sql.py` | qianniu | qianniu_shop_data_daily_registration |
 
 ## 一键批量采集脚本示例
 
@@ -579,12 +586,15 @@ python3 -m tourism_automation.cli.main fliggy-home collect-home --date $DATE --s
 # 4. 飞猪客服KPI（自动入库）
 python3 -m tourism_automation.cli.main fliggy-kpi employee --date $DATE --method api --shop-name "$SHOP"
 
-# 5. 飞猪订单列表（需要手动入库）
+# 5. 飞猪订单列表（订单明细 + 千牛订单汇总）
 python3 -m tourism_automation.cli.main fliggy-order-list list \
-  --page-num 1 --page-size 100 \
+  --page-num 1 --page-size 100 --all-pages \
   --deal-start "${DATE} 00:00:00" \
-  --deal-end "${DATE} 23:59:59" | \
-  python3 bin/prepare_fliggy_order_list_for_storage.py > result/orders_${DATE}.json
+  --deal-end "${DATE} 23:59:59" > result/orders_raw_${DATE}.json
+
+python3 bin/prepare_fliggy_order_list_for_storage.py < result/orders_raw_${DATE}.json > result/orders_${DATE}.json
+python3 bin/prepare_fliggy_order_list_sql.py < result/orders_${DATE}.json | mysql feizhu
+python3 bin/prepare_qianniu_shop_daily_key_sql.py < result/orders_${DATE}.json | mysql qianniu
 
 # 6. 赤兔KPI三个报表（需要手动导出和入库）
 echo "请手动导出赤兔KPI三个报表，然后运行："

@@ -14,13 +14,14 @@
 
 ### 2. 飞猪订单列表
 
-HTTP + Cookie采集订单数据，支持时间范围筛选和GMV计算。
+HTTP + Cookie采集订单数据，支持时间范围筛选、全页采集、订单明细入库，并将订单汇总指标写入千牛日度关键表。
 
-→ `fliggy_order_list`
+→ `feizhu.fliggy_order_list`
+→ `qianniu.qianniu_fliggy_shop_daily_key_data`（`total_bookings`、`total_pax`、`gmv`）
 
 ### 3. SYCM流量看板
 
-采集生意参谋流量监控数据（访客数、浏览量、广告/平台流量）。
+采集生意参谋流量监控数据（访客数、浏览量、广告/平台流量），写入同一张千牛日度关键表。
 
 → `qianniu.qianniu_fliggy_shop_daily_key_data`
 
@@ -105,8 +106,8 @@ docs/                      # 详细文档
 # 业务1：赤兔KPI报表导出（必须用--date-mode day）
 python3 -m tourism_automation.cli.main shop-kpi-export --report-name "人均日接入" --date-mode day --date YYYY-MM-DD
 
-# 业务2：飞猪订单列表采集
-python3 -m tourism_automation.cli.main fliggy-order-list list --page-num 1 --page-size 100 --deal-start "YYYY-MM-DD 00:00:00" --deal-end "YYYY-MM-DD 23:59:59"
+# 业务2：飞猪订单列表采集（必须 --all-pages，预处理后同时写订单明细和千牛订单汇总）
+python3 -m tourism_automation.cli.main fliggy-order-list list --page-num 1 --page-size 100 --all-pages --deal-start "YYYY-MM-DD 00:00:00" --deal-end "YYYY-MM-DD 23:59:59"
 
 # 业务3：SYCM流量看板采集
 python3 -m tourism_automation.cli.main sycm flow-monitor --date YYYY-MM-DD --shop-name "皇家加勒比国际游轮旗舰店"

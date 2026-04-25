@@ -76,10 +76,20 @@ KPI_DOWNLOAD_WAIT_TIMEOUT_SECONDS=90 ./scripts/all.sh 2026-04-24
 
 ### 2. 飞猪订单列表
 
-**目标表**：`fliggy_order_list`
+**目标表**：
+- `feizhu.fliggy_order_list` - 订单明细
+- `qianniu.qianniu_fliggy_shop_daily_key_data` - 订单汇总指标
 
 **数据量**：每天50-100单
 **耗时**：约30秒
+
+**订单汇总指标**：
+- total_bookings - 来自订单预处理后的 `summary.total_booking`
+- total_pax - 来自订单预处理后的 `summary.total_pax`
+- gmv - 来自订单预处理后的 `summary.gmv`
+
+**重要处理步骤**：
+飞猪订单列表不能直接写入 `qianniu_fliggy_shop_daily_key_data`，必须先经过 `bin/prepare_fliggy_order_list_for_storage.py` 预处理。该步骤会按 `package_type` 的“通兑”和“N人房”规则计算 `total_bookings`、`total_pax`，并按 `actual_fee` 汇总 `gmv`。随后使用 `bin/prepare_qianniu_shop_daily_key_sql.py` 写入千牛日度关键表。
 
 ### 3. SYCM流量看板
 
@@ -105,7 +115,7 @@ KPI_DOWNLOAD_WAIT_TIMEOUT_SECONDS=90 ./scripts/all.sh 2026-04-24
    - 导出Excel → 下载完成后立即继续（最多等待 `KPI_DOWNLOAD_WAIT_TIMEOUT_SECONDS`）→ 转换JSON → 生成SQL → 入库
    ↓
 2. 飞猪订单列表采集
-   - HTTP采集 → 预处理 → 入库
+   - HTTP采集（必须带 --all-pages）→ 预处理计算订单汇总 → 订单明细入库 → 订单汇总入库千牛日度关键表
    ↓
 3. SYCM流量看板采集
    - HTTP采集 → 转换SQL → 入库飞猪店铺日度关键数据和店铺数据每日登记
@@ -224,11 +234,13 @@ crontab -e
 日期：2026-04-24
 ========================================
 
-▶ [1/3] 采集订单数据...
+▶ [1/4] 采集订单数据...
   ✓ 采集到 85 条订单
-▶ [2/3] 数据预处理...
+▶ [2/4] 数据预处理...
   ✓ 预处理完成
-▶ [3/3] 数据入库...
+▶ [3/4] 订单明细入库...
+  ✓ 订单明细入库完成
+▶ [4/4] 订单汇总入库千牛日度关键表...
   ✓ 入库完成
 
 ========================================
@@ -284,6 +296,14 @@ SELECT COUNT(*) as 订单数,
 FROM fliggy_order_list
 WHERE order_date = '2026-04-24';
 
+-- 验证订单汇总数据
+SELECT 日期,
+       total_bookings,
+       total_pax,
+       gmv
+FROM qianniu.qianniu_fliggy_shop_daily_key_data
+WHERE 日期 = '2026-04-24';
+
 -- 验证流量数据
 SELECT 日期,
        total_uv as 访客数,
@@ -326,6 +346,10 @@ UNION ALL
 SELECT '订单', '飞猪订单列表', COUNT(*)
 FROM fliggy_order_list
 WHERE order_date = '$DATE'
+UNION ALL
+SELECT '订单汇总', '千牛日度关键表', COUNT(*)
+FROM qianniu.qianniu_fliggy_shop_daily_key_data
+WHERE 日期 = '$DATE'
 UNION ALL
 SELECT '流量', 'SYCM流量看板', COUNT(*)
 FROM qianniu.qianniu_fliggy_shop_daily_key_data

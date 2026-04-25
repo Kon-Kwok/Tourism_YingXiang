@@ -1,6 +1,6 @@
 #!/bin/bash
 # 飞猪订单列表采集脚本
-# 用途：采集、转换、入库飞猪订单数据
+# 用途：采集、转换、入库飞猪订单数据，并同步订单汇总到千牛日度关键表
 # 使用：./skills/fliggy_orders.sh YYYY-MM-DD
 
 set -e  # 遇到错误立即退出
@@ -44,10 +44,11 @@ echo -e "${GREEN}日期：$DATE${NC}"
 echo -e "${GREEN}========================================${NC}"
 
 # 步骤1: 采集订单数据
-echo -e "${YELLOW}▶ [1/3] 采集订单数据...${NC}"
+echo -e "${YELLOW}▶ [1/4] 采集订单数据...${NC}"
 python3 -m tourism_automation.cli.main fliggy-order-list list \
   --page-num 1 \
   --page-size 100 \
+  --all-pages \
   --deal-start "${DATE} 00:00:00" \
   --deal-end "${DATE} 23:59:59" > /tmp/orders_raw_$$.json
 
@@ -58,21 +59,29 @@ if [ ! -s /tmp/orders_raw_$$.json ]; then
 fi
 
 # 统计订单数量
-ORDER_COUNT=$(jq 'length' /tmp/orders_raw_$$.json 2>/dev/null || echo "0")
+ORDER_COUNT=$(jq -r '.summary.order_count // (.rows | length) // 0' /tmp/orders_raw_$$.json 2>/dev/null || echo "0")
 echo -e "  ${GREEN}✓ 采集到 $ORDER_COUNT 条订单${NC}"
 
 # 步骤2: 数据预处理
-echo -e "${YELLOW}▶ [2/3] 数据预处理...${NC}"
+echo -e "${YELLOW}▶ [2/4] 数据预处理（计算total_bookings/total_pax/gmv）...${NC}"
 cat /tmp/orders_raw_$$.json | \
   python3 bin/prepare_fliggy_order_list_for_storage.py > /tmp/orders_prep_$$.json
 
 echo -e "  ${GREEN}✓ 预处理完成${NC}"
 
-# 步骤3: 入库
-echo -e "${YELLOW}▶ [3/3] 数据入库...${NC}"
+# 步骤3: 订单明细入库
+echo -e "${YELLOW}▶ [3/4] 订单明细入库...${NC}"
 cat /tmp/orders_prep_$$.json | \
   python3 bin/prepare_fliggy_order_list_sql.py | \
   $MYSQL feizhu
+
+echo -e "  ${GREEN}✓ 订单明细入库完成${NC}"
+
+# 步骤4: 订单汇总入库千牛日度关键表
+echo -e "${YELLOW}▶ [4/4] 订单汇总入库千牛日度关键表...${NC}"
+cat /tmp/orders_prep_$$.json | \
+  python3 bin/prepare_qianniu_shop_daily_key_sql.py | \
+  $MYSQL qianniu
 
 # 清理临时文件
 rm -f /tmp/orders_raw_$$.json /tmp/orders_prep_$$.json

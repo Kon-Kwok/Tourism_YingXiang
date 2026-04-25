@@ -15,7 +15,7 @@
 
 昨日同一业务日期的 6 条链路：
 
-1. 飞猪订单汇总 -> `qianniu_fliggy_shop_daily_key_data`
+1. 飞猪订单汇总 -> `qianniu_fliggy_shop_daily_key_data`（`--all-pages` 采集后，经 `prepare_fliggy_order_list_for_storage.py` 计算，再由 `prepare_qianniu_shop_daily_key_sql.py` 写入）
 2. SYCM 流量 -> `qianniu_fliggy_shop_daily_key_data`
 3. SYCM 关注店铺人数 -> `qianniu_shop_data_daily_registration`
 4. `人均日接入` -> `fliggy_customer_service_data_daily`

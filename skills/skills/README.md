@@ -10,7 +10,7 @@
 **功能**：
 一键采集飞猪业务的三大核心日报数据：
 - 赤兔KPI客服报表（3个报表：人均日接入、每周店铺个人数据、客服数据23年新）
-- 飞猪订单列表
+- 飞猪订单列表（订单明细 + 千牛日度关键表订单汇总）
 - SYCM流量看板
 
 **使用**：
@@ -105,10 +105,15 @@ daily-data-collection/
 
 ### 2. 飞猪订单列表
 
-**目标表**：`fliggy_order_list`
+**目标表**：
+- `feizhu.fliggy_order_list` - 订单明细
+- `qianniu.qianniu_fliggy_shop_daily_key_data` - `total_bookings`、`total_pax`、`gmv`
 
 **数据量**：每天50-100单
 **耗时**：约30秒
+
+**处理步骤**：
+订单采集必须带 `--all-pages`，采集结果先经过 `bin/prepare_fliggy_order_list_for_storage.py` 计算汇总指标，再分别通过 `bin/prepare_fliggy_order_list_sql.py` 和 `bin/prepare_qianniu_shop_daily_key_sql.py` 写入订单明细表和千牛日度关键表。
 
 ### 3. SYCM流量看板
 

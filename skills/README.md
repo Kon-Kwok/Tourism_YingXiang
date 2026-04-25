@@ -7,7 +7,7 @@
 | 脚本 | 业务 | 用途 |
 |------|------|------|
 | `kpi_reports.sh` | 赤兔KPI三个报表 | 采集、转换、入库客服数据 |
-| `fliggy_orders.sh` | 飞猪订单列表 | 采集、转换、入库订单数据 |
+| `fliggy_orders.sh` | 飞猪订单列表 | 采集、转换、入库订单明细，并同步 `gmv`、`total_bookings`、`total_pax` 到千牛日度关键表 |
 | `sycm_flow.sh` | SYCM流量看板 | 采集、转换、入库流量数据和关注店铺人数 |
 | `all.sh` | 全部业务 | 一键执行所有三个业务 |
 
@@ -88,6 +88,10 @@ EOF
 # 验证飞猪订单数据
 mysql -h $HOST -P $PORT -u $USER -p$PASS feizhu \
   -e "SELECT COUNT(*) as 订单数 FROM fliggy_order_list WHERE order_date = '2026-04-24';"
+
+# 验证飞猪订单汇总数据
+mysql -h $HOST -P $PORT -u $USER -p$PASS qianniu \
+  -e "SELECT 日期, total_bookings, total_pax, gmv FROM qianniu_fliggy_shop_daily_key_data WHERE 日期 = '2026-04-24';"
 
 # 验证SYCM流量数据
 mysql -h $HOST -P $PORT -u $USER -p$PASS qianniu \

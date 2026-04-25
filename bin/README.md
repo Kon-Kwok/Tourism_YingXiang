@@ -8,7 +8,7 @@
   - 配置目录：`~/.config/google-chrome-debug`
   - 用途：所有数据采集的前置条件
 
-### 数据转换流程（7个）
+### 数据转换流程（8个）
 
 #### Excel转JSON
 - **prepare_shop_kpi_excel_to_json.py**
@@ -29,13 +29,18 @@
    - 报表：客服数据23年新（id=2496）
    - 目标表：`fliggy_customer_service_performance_workload_analysis`
 
-#### 飞猪订单处理（2个）
+#### 飞猪订单处理（3个）
 - **prepare_fliggy_order_list_for_storage.py**
-  - 功能：订单数据预处理（计算总人数、GMV等）
+  - 功能：订单数据预处理（按“通兑”和“N人房”规则计算 `total_booking`、`total_pax`，并汇总 `gmv`）
   
 - **prepare_fliggy_order_list_sql.py**
   - 功能：将订单JSON转换为SQL
-  - 目标表：`fliggy_order_list`
+  - 目标表：`feizhu.fliggy_order_list`
+
+- **prepare_qianniu_shop_daily_key_sql.py**
+  - 功能：将订单预处理后的汇总指标转换为SQL
+  - 目标表：`qianniu.qianniu_fliggy_shop_daily_key_data`
+  - 字段：`total_bookings`、`total_pax`、`gmv`
 
 #### SYCM流量（1个）
 - **prepare_sycm_flow_sql.py**
@@ -71,12 +76,17 @@ python3 bin/prepare_shop_kpi_excel_to_json.py "$EXCEL" | \
 
 ```bash
 python3 -m tourism_automation.cli.main fliggy-order-list list \
-  --page-num 1 --page-size 100 \
+  --page-num 1 --page-size 100 --all-pages \
   --deal-start "2026-04-24 00:00:00" \
-  --deal-end "2026-04-24 23:59:59" | \
-  python3 bin/prepare_fliggy_order_list_for_storage.py | \
-  python3 bin/prepare_fliggy_order_list_sql.py | \
+  --deal-end "2026-04-24 23:59:59" > /tmp/orders_raw.json
+
+python3 bin/prepare_fliggy_order_list_for_storage.py < /tmp/orders_raw.json > /tmp/orders_prep.json
+
+python3 bin/prepare_fliggy_order_list_sql.py < /tmp/orders_prep.json | \
   mysql -h 172.28.190.60 -P 3306 -u remote_user -pTourism2024 feizhu
+
+python3 bin/prepare_qianniu_shop_daily_key_sql.py < /tmp/orders_prep.json | \
+  mysql -h 172.28.190.60 -P 3306 -u remote_user -pTourism2024 qianniu
 ```
 
 ### 业务3：SYCM流量看板
@@ -90,7 +100,7 @@ python3 -m tourism_automation.cli.main sycm flow-monitor \
 
 ---
 
-## 已删除的冗余脚本（15个）
+## 已删除的冗余脚本
 
 ### Chrome相关（5个）
 - ensure-chrome-debug.sh
@@ -115,12 +125,11 @@ python3 -m tourism_automation.cli.main sycm flow-monitor \
 
 **原因**：一次性初始化工具，不是日常操作
 
-### 千牛手动导入（3个）
+### 千牛旧手动导入（2个）
 - prepare_qianniu_shop_daily_key_flow_monitor_sql.py
-- prepare_qianniu_shop_daily_key_sql.py
 - prepare_qianniu_shop_data_daily_registration_sql.py
 
-**原因**：已被SYCM自动化采集取代
+**原因**：已被自动化采集取代；`prepare_qianniu_shop_daily_key_sql.py` 当前已恢复为订单汇总入库的必要脚本。
 
 ### 批量脚本（1个）
 - download_all_kpi_reports.sh
@@ -158,4 +167,4 @@ python3 -m tourism_automation.cli.main sycm flow-monitor \
 ---
 
 **最后更新**: 2026-04-25
-**脚本总数**: 8个（精简后）
+**脚本总数**: 10个（精简后）
