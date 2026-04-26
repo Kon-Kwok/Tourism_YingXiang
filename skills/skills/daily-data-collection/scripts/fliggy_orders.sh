@@ -1,6 +1,6 @@
 #!/bin/bash
 # 飞猪订单列表采集脚本
-# 用途：采集、转换、入库飞猪订单数据，并同步订单汇总到千牛日度关键表
+# 用途：采集、转换、入库飞猪订单数据
 # 使用：./skills/fliggy_orders.sh YYYY-MM-DD
 
 set -e  # 遇到错误立即退出
@@ -20,30 +20,14 @@ if [ -z "$1" ]; then
 fi
 
 DATE=$1
-if [ -z "${MYSQL_CMD}" ]; then
-  PORT="${PORT:-3306}"
-  if [ -z "${HOST}" ] || [ -z "${USER}" ] || [ -z "${PASS}" ]; then
-    echo -e "${RED}错误：数据库连接参数未配置${NC}"
-    echo "请设置以下变量后重试："
-    echo "  export HOST=\"<mysql_host>\""
-    echo "  export PORT=\"${PORT}\""
-    echo "  export USER=\"<mysql_user>\""
-    echo "  export PASS=\"<mysql_password>\""
-    echo "或设置 MYSQL_CMD，例如："
-    echo "  export MYSQL_CMD=\"mysql -h \$HOST -P \$PORT -u \$USER -p\$PASS\""
-    exit 1
-  fi
-  MYSQL_CMD="mysql -h ${HOST} -P ${PORT} -u ${USER} -p${PASS}"
-fi
-
-MYSQL="${MYSQL_CMD}"
+MYSQL="${MYSQL_CMD:-mysql -h $HOST -P $PORT -u $USER -p$PASS}"
 
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}飞猪订单列表采集${NC}"
 echo -e "${GREEN}日期：$DATE${NC}"
 echo -e "${GREEN}========================================${NC}"
 
-# 步骤1: 采集订单数据
+# 步骤1: 采集订单数据（带 all-pages，供后续总量计算）
 echo -e "${YELLOW}▶ [1/4] 采集订单数据...${NC}"
 python3 -m tourism_automation.cli.main fliggy-order-list list \
   --page-num 1 \
@@ -59,26 +43,23 @@ if [ ! -s /tmp/orders_raw_$$.json ]; then
 fi
 
 # 统计订单数量
-ORDER_COUNT=$(jq -r '.summary.order_count // (.rows | length) // 0' /tmp/orders_raw_$$.json 2>/dev/null || echo "0")
+ORDER_COUNT=$(jq 'length' /tmp/orders_raw_$$.json 2>/dev/null || echo "0")
 echo -e "  ${GREEN}✓ 采集到 $ORDER_COUNT 条订单${NC}"
 
 # 步骤2: 数据预处理
-echo -e "${YELLOW}▶ [2/4] 数据预处理（计算total_bookings/total_pax/gmv）...${NC}"
+echo -e "${YELLOW}▶ [2/4] 数据预处理...${NC}"
 cat /tmp/orders_raw_$$.json | \
   python3 bin/prepare_fliggy_order_list_for_storage.py > /tmp/orders_prep_$$.json
 
 echo -e "  ${GREEN}✓ 预处理完成${NC}"
 
-# 步骤3: 订单明细入库
 echo -e "${YELLOW}▶ [3/4] 订单明细入库...${NC}"
 cat /tmp/orders_prep_$$.json | \
   python3 bin/prepare_fliggy_order_list_sql.py | \
   $MYSQL feizhu
 
-echo -e "  ${GREEN}✓ 订单明细入库完成${NC}"
-
-# 步骤4: 订单汇总入库千牛日度关键表
-echo -e "${YELLOW}▶ [4/4] 订单汇总入库千牛日度关键表...${NC}"
+# 步骤4: 订单汇总入库（total_bookings / total_pax / gmv）到千牛日度关键表
+echo -e "${YELLOW}▶ [4/4] 订单汇总入库...${NC}"
 cat /tmp/orders_prep_$$.json | \
   python3 bin/prepare_qianniu_shop_daily_key_sql.py | \
   $MYSQL qianniu
