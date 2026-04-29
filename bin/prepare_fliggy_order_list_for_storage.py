@@ -9,6 +9,14 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 
 ROOM_CAPACITY_PATTERN = re.compile(r"(\d+)人房")
+CHINESE_ROOM_CAPACITY_PREFIXES = (
+    ("单人", 1),
+    ("双人", 2),
+    ("三人", 3),
+    ("四人", 4),
+    ("五人", 5),
+    ("六人", 6),
+)
 MONEY_CLEAN_PATTERN = re.compile(r"[^\d.\-]")
 AMOUNT_ONLY_TITLE_KEYWORDS = ("补差", "尾款")
 
@@ -31,9 +39,12 @@ def _extract_room_capacity(package_type: str | None) -> int | None:
     if not package_type:
         return None
     match = ROOM_CAPACITY_PATTERN.search(package_type)
-    if not match:
-        return None
-    return int(match.group(1))
+    if match:
+        return int(match.group(1))
+    for prefix, capacity in CHINESE_ROOM_CAPACITY_PREFIXES:
+        if prefix in package_type:
+            return capacity
+    return None
 
 
 def _is_amount_only_order(row: dict) -> bool:
