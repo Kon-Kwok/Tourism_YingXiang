@@ -111,6 +111,7 @@ class FliggyOrderListNormalizeTests(unittest.TestCase):
                 {
                     "orderId": "1",
                     "itemInfo": {
+                        "itemTitle": "SC260506 邮轮套餐",
                         "skuText": [
                             {"name": "套餐类型：", "value": "家庭阳台房3D3人房"},
                         ]
@@ -132,9 +133,36 @@ class FliggyOrderListNormalizeTests(unittest.TestCase):
         self.assertEqual(normalized["summary"]["page_size"], 10)
         self.assertNotIn("request_params", normalized)
         self.assertEqual(normalized["rows"][0]["orderId"], "1")
+        self.assertEqual(normalized["rows"][0]["item_title"], "SC260506 邮轮套餐")
         self.assertEqual(normalized["rows"][0]["package_type"], "家庭阳台房3D3人房")
         self.assertEqual(normalized["rows"][0]["buy_mount"], 3)
         self.assertEqual(normalized["rows"][0]["actual_fee"], "￥9367.01")
+
+    def test_normalize_order_list_payload_keeps_item_title_when_package_type_missing(self):
+        payload = {
+            "orderList": [
+                {
+                    "orderId": "4502286399049019434",
+                    "itemInfo": {
+                        "itemTitle": "SC260506 1D3人间升1D4人间 补差 668.98元",
+                        "skuText": [
+                            {"name": "联系人姓名：", "value": "张连杰"},
+                            {"name": "叶子类目：", "value": "旅游商品升级差价/押金"},
+                        ],
+                    },
+                    "payInfo": {"buyMount": 1, "actualFee": "￥668.98"},
+                    "statusInfo": {"statusText": "交易成功"},
+                }
+            ],
+            "total": 1,
+            "totalPage": 1,
+            "requestParams": {"pageNum": 1, "pageSize": 10},
+        }
+
+        normalized = normalize_order_list_payload(payload)
+
+        self.assertEqual(normalized["rows"][0]["item_title"], "SC260506 1D3人间升1D4人间 补差 668.98元")
+        self.assertIsNone(normalized["rows"][0]["package_type"])
 
     def test_normalize_order_list_payload_uses_requested_paging_when_response_omits_it(self):
         payload = {

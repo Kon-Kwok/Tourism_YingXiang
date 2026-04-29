@@ -25,6 +25,7 @@ def normalize_order_list_payload(
     rows = [
         {
             "orderId": order.get("orderId"),
+            "item_title": order.get("itemInfo", {}).get("itemTitle"),
             "package_type": _extract_package_type(order),
             "buy_mount": order.get("payInfo", {}).get("buyMount"),
             "actual_fee": order.get("payInfo", {}).get("actualFee"),

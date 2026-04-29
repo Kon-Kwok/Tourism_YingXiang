@@ -43,6 +43,37 @@ class PrepareFliggyOrderListForStorageTests(unittest.TestCase):
         self.assertEqual(result["summary"]["gmv"], 22451.5)
         self.assertEqual(result["rows"][0]["buy_mount"], 1)
 
+    def test_prepare_payload_for_storage_counts_amount_only_orders_only_in_gmv(self):
+        payload = {
+            "summary": {},
+            "rows": [
+                {
+                    "item_title": "SC260506 邮轮双人房",
+                    "package_type": "双人阳台房2人房",
+                    "buy_mount": 2,
+                    "actual_fee": "￥10000.00",
+                },
+                {
+                    "item_title": "SC260506 1D3人间升1D4人间 补差 668.98元",
+                    "package_type": None,
+                    "buy_mount": 1,
+                    "actual_fee": "￥668.98",
+                },
+                {
+                    "item_title": "SC260506 邮轮尾款 2000元",
+                    "package_type": "家庭阳台房4人房",
+                    "buy_mount": 4,
+                    "actual_fee": "￥2000.00",
+                },
+            ],
+        }
+
+        result = MODULE.prepare_payload_for_storage(payload)
+
+        self.assertEqual(result["summary"]["total_pax"], 2)
+        self.assertEqual(result["summary"]["total_booking"], 1)
+        self.assertEqual(result["summary"]["gmv"], 12668.98)
+
     def test_main_reads_stdin_and_writes_json(self):
         payload = {
             "summary": {},

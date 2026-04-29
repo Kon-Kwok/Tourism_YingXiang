@@ -42,6 +42,7 @@ def build_upsert_sql(payload):
             "("
             + ", ".join([
                 _quote_string(row.get("orderId")),
+                _quote_string(row.get("item_title")),
                 _quote_string(row.get("package_type")),
                 _format_int(row.get("buy_mount")),
                 actual_fee,
@@ -64,6 +65,7 @@ def build_upsert_sql(payload):
 -- 创建表（如果不存在）
 CREATE TABLE IF NOT EXISTS fliggy_order_list (
     order_id VARCHAR(50) PRIMARY KEY,
+    item_title VARCHAR(300),
     package_type VARCHAR(200),
     buy_mount INT,
     actual_fee DECIMAL(10,2),
@@ -79,10 +81,11 @@ CREATE TABLE IF NOT EXISTS fliggy_order_list (
 
 -- 插入数据
 INSERT INTO fliggy_order_list
-(order_id, package_type, buy_mount, actual_fee, order_time, status_text, order_date)
+(order_id, item_title, package_type, buy_mount, actual_fee, order_time, status_text, order_date)
 VALUES
 {',\n'.join(values)}
 ON DUPLICATE KEY UPDATE
+  item_title = VALUES(item_title),
   package_type = VALUES(package_type),
   buy_mount = VALUES(buy_mount),
   actual_fee = VALUES(actual_fee),

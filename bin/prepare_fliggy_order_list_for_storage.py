@@ -10,6 +10,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 ROOM_CAPACITY_PATTERN = re.compile(r"(\d+)人房")
 MONEY_CLEAN_PATTERN = re.compile(r"[^\d.\-]")
+AMOUNT_ONLY_TITLE_KEYWORDS = ("补差", "尾款")
 
 
 def _to_decimal(value) -> Decimal:
@@ -35,6 +36,11 @@ def _extract_room_capacity(package_type: str | None) -> int | None:
     return int(match.group(1))
 
 
+def _is_amount_only_order(row: dict) -> bool:
+    item_title = str(row.get("item_title") or "")
+    return any(keyword in item_title for keyword in AMOUNT_ONLY_TITLE_KEYWORDS)
+
+
 def _decimal_to_json_number(value: Decimal):
     normalized = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     if normalized == normalized.to_integral():
@@ -55,6 +61,10 @@ def prepare_payload_for_storage(payload: dict) -> dict:
         buy_mount = _to_decimal(row.get("buy_mount"))
         room_capacity = _extract_room_capacity(package_type)
         is_universal = "通兑" in (package_type or "")
+        gmv += _to_decimal(row.get("actual_fee"))
+
+        if _is_amount_only_order(row):
+            continue
 
         if is_universal and room_capacity:
             total_pax += buy_mount * Decimal(room_capacity)
@@ -65,8 +75,6 @@ def prepare_payload_for_storage(payload: dict) -> dict:
         else:
             total_pax += buy_mount
             total_booking += buy_mount
-
-        gmv += _to_decimal(row.get("actual_fee"))
 
     summary = result.setdefault("summary", {})
     summary["total_pax"] = _decimal_to_json_number(total_pax)
