@@ -1,50 +1,31 @@
 #!/bin/bash
 # 赤兔KPI三个报表采集脚本
 # 用途：采集、转换、入库赤兔KPI三个报表数据
-# 使用：./skills/kpi_reports.sh YYYY-MM-DD
+# 使用：./scripts/kpi_reports.sh YYYY-MM-DD
 
 set -e  # 遇到错误立即退出
 
-# 颜色输出
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# 引入公共函数库
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/common.sh"
 
 # 参数检查
-if [ -z "$1" ]; then
-  echo -e "${RED}错误：请提供日期参数${NC}"
-  echo "使用：./skills/kpi_reports.sh YYYY-MM-DD"
-  echo "示例：./skills/kpi_reports.sh 2026-04-24"
-  exit 1
-fi
-
+check_date_argument "$1"
 DATE=$1
-if [ -z "${MYSQL_CMD}" ]; then
-  PORT="${PORT:-3306}"
-  if [ -z "${HOST}" ] || [ -z "${USER}" ] || [ -z "${PASS}" ]; then
-    echo -e "${RED}错误：数据库连接参数未配置${NC}"
-    echo "请设置以下变量后重试："
-    echo "  export HOST=\"<mysql_host>\""
-    echo "  export PORT=\"${PORT}\""
-    echo "  export USER=\"<mysql_user>\""
-    echo "  export PASS=\"<mysql_password>\""
-    echo "或设置 MYSQL_CMD，例如："
-    echo "  export MYSQL_CMD=\"mysql -h \$HOST -P \$PORT -u \$USER -p\$PASS\""
-    exit 1
-  fi
-  MYSQL_CMD="mysql -h ${HOST} -P ${PORT} -u ${USER} -p${PASS}"
-fi
 
-MYSQL="${MYSQL_CMD}"
+# 初始化数据库连接
+MYSQL="$(init_mysql)"
+
 # 下载完成等待超时（秒），检测到新文件后立即继续。默认60秒
 MAX_WAIT_SECONDS="${KPI_DOWNLOAD_WAIT_TIMEOUT_SECONDS:-${KPI_DOWNLOAD_WAIT_SECONDS:-60}}"
 
+# 查找最新文件的函数
 find_latest_file() {
   local report_name=$1
   ls -t ~/Downloads/自定义报表*${report_name}*${DATE}至${DATE}*.xlsx 2>/dev/null | head -1
 }
 
+# 等待下载完成的函数
 wait_for_download() {
   local report_name=$1
   local started_at=$2
@@ -73,10 +54,8 @@ wait_for_download() {
   done
 }
 
-echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}赤兔KPI三个报表采集${NC}"
-echo -e "${GREEN}日期：$DATE${NC}"
-echo -e "${GREEN}========================================${NC}"
+# 打印开始标题
+print_collection_start "赤兔KPI三个报表采集" "$DATE"
 
 # 报表列表
 reports=(
@@ -104,17 +83,17 @@ for item in "${reports[@]}"; do
   echo -e "  [2/3] 等待下载...（检测到新文件后立即继续）"
   EXCEL="$(wait_for_download "$report_name" "$export_started_at" "$MAX_WAIT_SECONDS" || true)"
   if [ -z "$EXCEL" ]; then
-    echo -e "  ${RED}✗ 下载超时：未在 ${MAX_WAIT_SECONDS}s 内找到报表 [$report_name] 的新文件${NC}"
+    print_error "下载超时：未在 ${MAX_WAIT_SECONDS}s 内找到报表 [$report_name] 的新文件"
     exit 1
   fi
 
   if [[ "$(basename "$EXCEL")" != *"$report_name"* || "$(basename "$EXCEL")" != *"${DATE}至${DATE}"* ]]; then
-    echo -e "  ${RED}✗ 下载文件日期或报表不匹配：$(basename "$EXCEL")${NC}"
+    print_error "下载文件日期或报表不匹配：$(basename "$EXCEL")"
     echo -e "  ${RED}  期望：报表 [$report_name]，日期范围 [$DATE至$DATE]${NC}"
     exit 1
   fi
 
-  echo -e "  ${GREEN}✓ 找到文件：$(basename "$EXCEL")${NC}"
+  print_success "找到文件：$(basename "$EXCEL")"
 
   # 步骤3: 转换并入库
   echo -e "  [3/3] 转换并入库..."
@@ -122,10 +101,8 @@ for item in "${reports[@]}"; do
     python3 "bin/$script_name" | \
     $MYSQL feizhu
 
-  echo -e "  ${GREEN}✓ $report_name 处理完成${NC}"
+  print_success "$report_name 处理完成"
 done
 
-echo ""
-echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}✓ 所有报表处理完成${NC}"
-echo -e "${GREEN}========================================${NC}"
+# 打印完成标题
+print_collection_end "所有报表处理"

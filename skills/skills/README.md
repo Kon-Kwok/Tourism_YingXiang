@@ -5,7 +5,7 @@
 ## 📋 技能列表
 
 ### daily-data-collection ⭐
-每日数据采集技能（统一技能）
+核心数据采集技能（含完整脚本）
 
 **功能**：
 一键采集飞猪业务的三大核心日报数据：
@@ -13,21 +13,28 @@
 - 飞猪订单列表（订单明细 + 千牛日度关键表订单汇总）
 - SYCM流量看板
 
-**使用**：
-```bash
-./scripts/all.sh YYYY-MM-DD
-```
-
-**示例**：
-```bash
-# 采集昨日数据
-./scripts/all.sh $(date -d "yesterday" +%Y-%m-%d)
-
-# 采集指定日期
-./scripts/all.sh 2026-04-24
-```
+**支持三种调用方式**：
+- WSL/Linux 原生：`./scripts/all.sh YYYY-MM-DD`
+- Windows PowerShell：`wsl bash -c "cd ~/Tourism_Xiangwang && ./scripts/all.sh ..."`
+- OpenClaw：通过 `openclaw-daily-data-collection` 包装器调用
 
 **详细文档**：[daily-data-collection/SKILL.md](./daily-data-collection/SKILL.md)
+
+---
+
+### openclaw-daily-data-collection 🤖
+OpenClaw 适配版（轻量包装器，不含独立脚本）
+
+**功能**：
+与 `daily-data-collection` 相同，专门适配 OpenClaw agent 运行环境。增加了 agent 安全护栏（不碰 Chrome、不深入调试）。
+
+**安装**：
+```bash
+bash skills/skills/openclaw-daily-data-collection/install.sh
+```
+安装脚本会自动检测环境、从 `.env` 读取配置、生成 `run_all.sh`、并安装到 OpenClaw workspace。
+
+**详细文档**：[openclaw-daily-data-collection/SKILL.md](./openclaw-daily-data-collection/SKILL.md)
 
 ---
 
@@ -196,6 +203,6 @@ cp -r skills/skills/daily-data-collection .claude/skills/
 
 ---
 
-**最后更新**: 2026-04-25
-**技能版本**: v1
+**最后更新**: 2026-04-30
+**技能版本**: v2
 **状态**: ✅ 生产就绪

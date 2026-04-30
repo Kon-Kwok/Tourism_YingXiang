@@ -6,7 +6,8 @@
 
 1. [architecture/project-structure.md](architecture/project-structure.md)：了解目录结构、模块边界和 CLI 入口。
 2. [collectors/unified_chrome_guide.md](collectors/unified_chrome_guide.md)：准备统一 Chrome 调试会话。
-3. 按目标功能阅读对应采集器文档：
+3. [operations/openclaw-daily-report-runbook.md](operations/openclaw-daily-report-runbook.md)：OpenClaw 代理执行日报采集、入库和校验的标准流程。
+4. 按目标功能阅读对应采集器文档：
    - [collectors/sycm.md](collectors/sycm.md)
    - [collectors/sycm_multi_page.md](collectors/sycm_multi_page.md)
    - [collectors/fliggy-home.md](collectors/fliggy-home.md)

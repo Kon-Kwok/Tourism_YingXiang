@@ -1,26 +1,19 @@
 #!/bin/bash
 # 三大核心业务一键采集脚本
 # 用途：一次性采集所有三个业务的数据
-# 使用：./skills/all.sh YYYY-MM-DD
+# 使用：./scripts/all.sh YYYY-MM-DD
 
 set -e  # 遇到错误立即退出
 
-# 颜色输出
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# 引入公共函数库
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/common.sh"
 
 # 参数检查
-if [ -z "$1" ]; then
-  echo "错误：请提供日期参数"
-  echo "使用：./skills/all.sh YYYY-MM-DD"
-  echo "示例：./skills/all.sh 2026-04-24"
-  exit 1
-fi
-
+check_date_argument "$1"
 DATE=$1
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# 打印欢迎信息
 echo -e "${GREEN}"
 echo "========================================"
 echo "   三大核心业务一键采集"
@@ -52,6 +45,7 @@ ELAPSED=$((END_TIME - START_TIME))
 MINUTES=$((ELAPSED / 60))
 SECONDS=$((ELAPSED % 60))
 
+# 打印完成信息
 echo -e "${GREEN}"
 echo "========================================"
 echo "   ✓ 所有业务采集完成！"
