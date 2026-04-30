@@ -193,15 +193,6 @@ source .env (加载环境变量)
 **3. 文件验证**
 - `check_file_not_empty`：检查文件是否存在且非空
 
-### 重构优势
-
-**代码复用**：消除了约37%的重复代码，三个主要脚本共享公共函数库
-
-**一致性**：所有脚本使用相同的错误处理、输出格式和参数验证逻辑
-
-**可维护性**：修改公共逻辑只需更新 common.sh，所有脚本自动生效
-
-**跨平台兼容**：专门优化 Windows → WSL 调用链，确保环境变量正确传递
 
 ## 文件结构
 
@@ -220,34 +211,3 @@ openclaw-daily-data-collection/
     └── sycm_flow.sh             # SYCM 流量采集
 ```
 
-## 版本选择指南
-
-本项目提供两个独立版本，请根据运行环境选择：
-
-### 本版本（openclaw-daily-data-collection）
-
-✅ **适用场景**：
-- 在 **Windows** 下使用 **OpenClaw**
-- 通过 OpenClaw 的语音或文本命令调用
-- 需要 Windows ↔ WSL 的桥接
-
-✅ **优势**：
-- 专门优化 Windows → WSL 调用链
-- 自动处理环境变量跨平台传递
-- OpenClaw 集成，开箱即用
-
-### daily-data-collection 版本
-
-✅ **适用场景**：
-- 直接在 **Linux/WSL** 终端下运行
-- 需要更多技术细节和调试能力
-- 不使用 OpenClaw，直接调用脚本
-
-✅ **优势**：
-- 完整的技术文档
-- 支持多种调用方式
-- 适合开发和调试
-
-**快速选择**：
-- 使用 OpenClaw → 本版本（openclaw-daily-data-collection）
-- 直接在 WSL 终端操作 → daily-data-collection 版本
