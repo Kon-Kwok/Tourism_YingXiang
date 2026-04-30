@@ -30,9 +30,22 @@ else
     IN_WSL=false
 fi
 
-# 检测项目路径（本脚本在 skills/skills/openclaw-daily-data-collection/ 下）
+# 检测项目路径：从脚本所在目录向上查找含 .env 的目录作为项目根
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "$SKILL_DIR/../.." && pwd)"
+PROJECT_DIR=""
+_search_dir="$SKILL_DIR"
+for _i in $(seq 1 6); do
+    _search_dir="$(cd "$_search_dir/.." && pwd)"
+    if [ -f "$_search_dir/.env" ]; then
+        PROJECT_DIR="$_search_dir"
+        break
+    fi
+    [ "$_search_dir" = "/" ] && break
+done
+# 兜底：上跳 3 级（skills/skills/openclaw-daily-data-collection/ → 项目根）
+if [ -z "$PROJECT_DIR" ]; then
+    PROJECT_DIR="$(cd "$SKILL_DIR/../../.." && pwd)"
+fi
 
 if [ ! -f "$PROJECT_DIR/.env" ]; then
     echo -e "  ${RED}✗ 未找到 .env 文件: $PROJECT_DIR/.env${NC}"
